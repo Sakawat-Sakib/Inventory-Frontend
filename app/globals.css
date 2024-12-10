@@ -25,52 +25,26 @@
 
   .modal-content {
     @apply bg-secondary p-6 rounded-lg max-w-md w-full shadow-xl transform transition-all;
+    animation: slideIn 0.2s ease-out;
   }
 
-  .modal input {
-    @apply transition-colors duration-200;
-    @apply focus:border-primary focus:ring-primary;
+  .modal {
+    animation: fadeIn 0.2s ease-out;
   }
+}
 
-  /* Barcode scanner styles */
-  .drawingBuffer {
-    display: none;
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideIn {
+  from { 
+    transform: translateY(-10px); 
+    opacity: 0; 
   }
-
-  video {
-    @apply w-full h-full object-cover rounded-lg;
-  }
-
-  #interactive.viewport {
-    position: relative;
-    max-width: 100%;
-    aspect-ratio: 16/9;
-  }
-
-  #interactive.viewport > canvas, #interactive.viewport > video {
-    max-width: 100%;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 16/9;
-  }
-
-  /* Add these aspect ratio utilities if you're not already using them */
-  .aspect-w-4 {
-    position: relative;
-    padding-bottom: calc(3 / 4 * 100%);
-  }
-
-  .aspect-h-3 {
-    position: relative;
-  }
-
-  .aspect-w-4 > * {
-    position: absolute;
-    height: 100%;
-    width: 100%;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    left: 0;
+  to { 
+    transform: translateY(0); 
+    opacity: 1; 
   }
 } 

@@ -7,6 +7,7 @@ import KanbanColumn from './KanbanColumn';
 import ProductCard from './ProductCard';
 import CategoryDialog from './CategoryDialog';
 import axios from 'axios';
+import DeleteDialog from './DeleteDialog';
 
 export default function KanbanBoard() {
   const [categories, setCategories] = useState([]);
@@ -15,6 +16,8 @@ export default function KanbanBoard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -112,6 +115,50 @@ export default function KanbanBoard() {
     setActiveId(null);
   }
 
+  async function handleDeleteCategory(categoryId) {
+    const category = categories.find(c => c._id === categoryId);
+    if (!category) return;
+    
+    setDeletingCategory(category);
+    setIsDeleteDialogOpen(true);
+  }
+
+  async function handleConfirmDelete() {
+    if (!deletingCategory) return;
+
+    try {
+      const response = await axios.delete(
+        `${process.env.NEXT_PUBLIC_API_URL}/categories/${deletingCategory._id}`
+      );
+      
+      // Find the Uncategorized category
+      const uncategorizedCategory = categories.find(c => c.name === 'Uncategorized');
+      
+      // Update local state
+      setCategories(categories.filter(c => c._id !== deletingCategory._id));
+      
+      // Move all products from deleted category to Uncategorized
+      setProducts(products.map(product => {
+        if (product.category && product.category._id === deletingCategory._id) {
+          return {
+            ...product,
+            category: uncategorizedCategory
+          };
+        }
+        return product;
+      }));
+      
+      // Close the dialog
+      setIsDeleteDialogOpen(false);
+      setDeletingCategory(null);
+      
+    } catch (error) {
+      console.error('Failed to delete category:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to delete category';
+      alert(errorMessage);
+    }
+  }
+
   if (loading) return <div className="p-4">Loading...</div>;
   if (error) return <div className="p-4 text-red-500">{error}</div>;
 
@@ -140,6 +187,7 @@ export default function KanbanBoard() {
                 }
                 return p.category && p.category._id === category._id;
               })}
+              onDeleteCategory={handleDeleteCategory}
             />
           ))}
         </div>
@@ -158,6 +206,16 @@ export default function KanbanBoard() {
         isOpen={isCategoryDialogOpen}
         onClose={() => setIsCategoryDialogOpen(false)}
         onSubmit={handleCreateCategory}
+      />
+
+      <DeleteDialog
+        isOpen={isDeleteDialogOpen}
+        onClose={() => {
+          setIsDeleteDialogOpen(false);
+          setDeletingCategory(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        categoryName={deletingCategory?.name}
       />
     </div>
   );
