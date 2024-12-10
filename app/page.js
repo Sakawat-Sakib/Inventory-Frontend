@@ -1,9 +1,12 @@
 'use client'
 
+import { useState } from 'react';
 import BarcodeScanner from './components/BarcodeScanner';
 import KanbanBoard from './components/KanbanBoard';
 
 export default function Home() {
+  const [newProduct, setNewProduct] = useState(null);
+
   return (
     <div className="min-h-screen">
       <header className="bg-primary text-secondary p-4">
@@ -11,8 +14,10 @@ export default function Home() {
       </header>
 
       <main>
-        <BarcodeScanner onProductScanned={() => {}} />
-        <KanbanBoard />
+        <BarcodeScanner 
+          onProductScanned={(product) => setNewProduct(product)} 
+        />
+        <KanbanBoard newProduct={newProduct} />
       </main>
     </div>
   );

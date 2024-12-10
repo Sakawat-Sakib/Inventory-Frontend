@@ -9,7 +9,7 @@ import CategoryDialog from './CategoryDialog';
 import axios from 'axios';
 import DeleteDialog from './DeleteDialog';
 
-export default function KanbanBoard() {
+export default function KanbanBoard({ newProduct }) {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -25,6 +25,12 @@ export default function KanbanBoard() {
       fetchProducts()
     ]).finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (newProduct) {
+      setProducts(prevProducts => [...prevProducts, newProduct]);
+    }
+  }, [newProduct]);
 
   async function fetchCategories() {
     try {
