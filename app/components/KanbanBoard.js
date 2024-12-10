@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react';
-import { DndContext, DragOverlay, closestCorners } from '@dnd-kit/core';
+import { DndContext, DragOverlay, pointerWithin } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import KanbanColumn from './KanbanColumn';
 import ProductCard from './ProductCard';
@@ -74,18 +74,37 @@ export default function KanbanBoard() {
       const productId = active.id;
       const categoryId = over.id;
       
+      console.log('Moving product:', productId, 'to category:', categoryId);
+      console.log('Current products in category:', 
+        products.filter(p => p.category && p.category._id === categoryId).length
+      );
+      
       try {
-        await axios.patch(`${process.env.NEXT_PUBLIC_API_URL}/products/${productId}/category`, {
-          categoryId
-        });
-        
-        // Update local state
-        setProducts(products.map(product => 
-          product._id === productId 
-            ? { ...product, category: categories.find(c => c._id === categoryId) }
-            : product
-        ));
+        const response = await axios.patch(
+          `${process.env.NEXT_PUBLIC_API_URL}/products/${productId}/category`, 
+          { categoryId }
+        );
+
+        console.log('Server response:', response.data);
+
+        if (response.data) {
+          setProducts(prevProducts => {
+            const newProducts = prevProducts.map(product => 
+              product._id === productId 
+                ? { ...product, category: response.data.category }
+                : product
+            );
+            
+            console.log('Updated products in category:', 
+              newProducts.filter(p => p.category && p.category._id === categoryId).length
+            );
+            
+            return newProducts;
+          });
+        }
       } catch (error) {
+        console.error('Failed to update product category:', error);
+        console.error('Error response:', error.response?.data);
         alert('Failed to update product category');
       }
     }
@@ -106,7 +125,7 @@ export default function KanbanBoard() {
       </div>
 
       <DndContext
-        collisionDetection={closestCorners}
+        collisionDetection={pointerWithin}
         onDragStart={({ active }) => setActiveId(active.id)}
         onDragEnd={handleDragEnd}
       >
@@ -115,7 +134,12 @@ export default function KanbanBoard() {
             <KanbanColumn
               key={category._id}
               category={category}
-              products={products.filter(p => p.category._id === category._id)}
+              products={products.filter(p => {
+                if (category.name === 'Uncategorized') {
+                  return !p.category || p.category._id === category._id;
+                }
+                return p.category && p.category._id === category._id;
+              })}
             />
           ))}
         </div>

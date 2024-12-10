@@ -3,15 +3,20 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export default function ProductCard({ product, isDragging }) {
+export default function ProductCard({ product }) {
   const {
     attributes,
     listeners,
     setNodeRef,
     transform,
-    transition
+    transition,
+    isDragging
   } = useSortable({
-    id: product._id
+    id: product._id,
+    data: {
+      type: 'product',
+      product
+    }
   });
 
   const style = {
@@ -24,9 +29,9 @@ export default function ProductCard({ product, isDragging }) {
     <div
       ref={setNodeRef}
       style={style}
-      className="product-card"
       {...attributes}
       {...listeners}
+      className="product-card"
     >
       <div className="font-medium mb-2">Material: {product.material}</div>
       <div className="text-sm mb-1">Barcode: {product.barcode}</div>
