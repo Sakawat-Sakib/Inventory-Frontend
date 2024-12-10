@@ -7,11 +7,14 @@ export default function BarcodeScanner({ onProductScanned }) {
   const [manualBarcode, setManualBarcode] = useState("");
   const [error, setError] = useState("");
   const [hasCamera, setHasCamera] = useState(false);
+  const [isFrontCamera, setIsFrontCamera] = useState(false);
 
   // Check if camera is available
   useEffect(() => {
     async function checkCamera() {
       try {
+        // First request camera permissions
+        await navigator.mediaDevices.getUserMedia({ video: true });
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         setHasCamera(videoDevices.length > 0);
@@ -19,6 +22,7 @@ export default function BarcodeScanner({ onProductScanned }) {
       } catch (err) {
         console.error('Error checking camera:', err);
         setError('Unable to access camera');
+        setHasCamera(false);
       }
     }
     checkCamera();
@@ -29,14 +33,16 @@ export default function BarcodeScanner({ onProductScanned }) {
     paused: !isScanning,
     constraints: {
       video: {
-        facingMode: "environment",
-        width: { min: 640, ideal: 1280, max: 1920 },
-        height: { min: 480, ideal: 720, max: 1080 }
+        // Simplified video constraints for better browser compatibility
+        facingMode: isFrontCamera ? "user" : "environment",
+        width: 640,
+        height: 480
       }
     },
     onError: (error) => {
       console.error("Scanner Error:", error);
       setError(`Scanner error: ${error.message}`);
+      setIsScanning(false);
     },
     onPlay: () => {
       console.log("Camera started successfully");
@@ -75,46 +81,73 @@ export default function BarcodeScanner({ onProductScanned }) {
   async function startScanning() {
     try {
       setError("");
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: "environment" } 
+      // Request camera access with basic constraints first
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: isFrontCamera ? "user" : "environment",
+          width: 640,
+          height: 480
+        }
       });
-      console.log("Camera access granted:", stream);
-      setIsScanning(true);
+      
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop()); // Stop the test stream
+        setIsScanning(true);
+      }
     } catch (err) {
       console.error("Error accessing camera:", err);
       setError(`Camera access error: ${err.message}`);
+      setIsScanning(false);
     }
   }
 
   return (
     <div className="p-4">
-      <div className="flex gap-4 mb-4">
-        {hasCamera ? (
-          <button
-            className="button-primary"
-            onClick={() => {
-              if (!isScanning) {
-                startScanning();
-              } else {
-                setIsScanning(false);
-              }
-            }}
-          >
-            {isScanning ? 'Stop Scanning' : 'Start Scanner'}
-          </button>
-        ) : (
-          <div className="text-red-500">No camera detected</div>
-        )}
-        
-        <form onSubmit={handleManualSubmit} className="flex gap-2">
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-4">
+        {/* Left side - Camera controls */}
+        <div className="flex gap-2">
+          {hasCamera ? (
+            <>
+              <button
+                className="button-primary"
+                onClick={() => {
+                  if (!isScanning) {
+                    startScanning();
+                  } else {
+                    setIsScanning(false);
+                  }
+                }}
+              >
+                {isScanning ? 'Stop Scanning' : 'Start Scanner'}
+              </button>
+              <button
+                className="button-secondary"
+                onClick={() => {
+                  setIsFrontCamera(!isFrontCamera);
+                  if (isScanning) {
+                    setIsScanning(false);
+                    setTimeout(() => startScanning(), 100);
+                  }
+                }}
+              >
+                Switch Camera
+              </button>
+            </>
+          ) : (
+            <div className="text-red-500">No camera detected</div>
+          )}
+        </div>
+
+        {/* Right side - Manual input form */}
+        <form onSubmit={handleManualSubmit} className="flex gap-2 w-full sm:w-auto">
           <input
             type="text"
             value={manualBarcode}
             onChange={(e) => setManualBarcode(e.target.value)}
             placeholder="Enter barcode manually"
-            className="border border-primary px-2 rounded"
+            className="border border-primary px-2 rounded flex-1 sm:w-64"
           />
-          <button type="submit" className="button-secondary">
+          <button type="submit" className="button-secondary whitespace-nowrap">
             Add Product
           </button>
         </form>
@@ -124,7 +157,7 @@ export default function BarcodeScanner({ onProductScanned }) {
         <div className="relative w-full max-w-md mx-auto">
           <video 
             ref={ref} 
-            className="w-full rounded-lg transform scale-x-[-1]"
+            className={`w-full rounded-lg ${isFrontCamera ? 'transform scale-x-[-1]' : ''}`}
             autoPlay
             playsInline
             muted

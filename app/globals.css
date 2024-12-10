@@ -53,4 +53,24 @@
     height: auto;
     aspect-ratio: 16/9;
   }
+
+  /* Add these aspect ratio utilities if you're not already using them */
+  .aspect-w-4 {
+    position: relative;
+    padding-bottom: calc(3 / 4 * 100%);
+  }
+
+  .aspect-h-3 {
+    position: relative;
+  }
+
+  .aspect-w-4 > * {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
 } 
