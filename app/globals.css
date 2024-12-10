@@ -39,7 +39,6 @@
 
   video {
     @apply w-full h-full object-cover rounded-lg;
-    transform: scaleX(-1);
   }
 
   #interactive.viewport {
